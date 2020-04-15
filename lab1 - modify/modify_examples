@@ -1,0 +1,165 @@
+#!/bin/sh
+# MODIFY EXAMPLES SCRIPT
+# BY JAN RADZIMINSKI
+# 293052
+
+# ABOUT SCRIPT
+SCRIPT_NAME=$(basename $0)
+PARENT_SCRIPT="modify"
+# -----------
+
+createTestDir() {
+	mkdir test_home test_home/A_dir test_home/A_dir/A_sub_dir test_home/A_dir/A_empty_dir test_home/B_dir test_home/C_dir
+	touch test_home/A_dir/A_file1.txt test_home/A_dir/A_file2.txt test_home/A_dir/A_sub_dir/A_sub_dir_file.txt
+	touch test_home/B_dir/B_file.txt test_home/B_dir/B_FILE.TXT test_home/B_dir/B_other_file.txt
+	touch test_home/C_dir/ąćęłńóśźżääööüü.txt
+	touch test_home/D_file.txt
+	cd test_home
+}
+
+removeTestDir() {
+	cd ..
+	rm -r test_home
+}
+
+echo "$SCRIPT_NAME is a script that leads the tester of \"$PARENT_SCRIPT\" script through correct, uncommon and incorect usage examples of \"$PARENT_SCRIPT\"."
+echo "REMARK: For this script to work correctly the $PARENT_SCRIPT script should be placed in the same directory."
+echo "Creating files and directories used for testing in this script:\n"
+cat<<EOT
+test_home
+|----A_dir
+	|----A_sub_dir
+		|----A_sub_dir_file.txt
+	|----A_empty_dir
+		|----*
+	|----A_file1.txt	
+	|----A_file2.txt
+|----B_dir
+	|----B_file.txt
+	|----B_FILE.TXT
+	|----B_other_file.txt
+|----C_dir
+	|----ąćęłńóśźżääööüü.txt
+|----D_file.txt
+
+EOT
+ 
+createTestDir
+
+echo "Contents of test_home: "
+ls -R .
+echo "All further tests will be run inside test_home folder."
+
+echo "\n=================================================="
+echo "================ CORRECT EXAMPLES ================"
+echo "=================================================="
+echo "\n===========> CORRECT EXAMPLE (TEST 1):"
+echo "Uppercasing names of A_dir and D_file (whithout recursion): "
+echo "../$PARENT_SCRIPT -u A_dir D_file\n"
+../$PARENT_SCRIPT -u A_dir D_file.txt
+
+echo "\nContents of test_home after TEST 1: "
+ls -R .
+removeTestDir
+
+echo "\n===========> CORRECT EXAMPLE (TEST 2):"
+createTestDir
+echo "Uppercasing names of A_dir recursivly: "
+echo "../$PARENT_SCRIPT -r -u A_dir\n"
+../$PARENT_SCRIPT -r -u A_dir
+
+echo "\nContents of test_home after TEST 2: "
+ls -R 
+removeTestDir
+
+echo "\n===========> CORRECT EXAMPLE (TEST 3):"
+createTestDir
+echo "Chanigng all A's in names in A_dir into X's recursivly: "
+echo "../$PARENT_SCRIPT -r 's/A/X/g' A_dir\n"
+../$PARENT_SCRIPT -r 's/A/X/g' A_dir
+
+echo "\nContents of test_home after TEST 3: "
+ls -R 
+removeTestDir
+
+echo "\n===========> CORRECT EXAMPLE (TEST 4):"
+createTestDir
+echo "Lowercasing 2 specific files in A_dir (with recursive option - it does not change anything):"
+echo "../$PARENT_SCRIPT -r -l A_dir/A_file1.txt A_dir/A_file2.txt\n"
+../$PARENT_SCRIPT -r -l A_dir/A_file1.txt A_dir/A_file2.txt
+
+echo "\nContents of test_home after TEST 4: "
+ls -R 
+removeTestDir
+
+echo "\n===========> CORRECT EXAMPLE (TEST 5):"
+createTestDir
+echo "Upercasing all files in C_dir - those files sconsist of names with non-english letters (from Polish and German alphabet):"
+echo "../$PARENT_SCRIPT -u -r C_dir\n"
+../$PARENT_SCRIPT -u -r C_dir
+
+echo "\nContents of test_home after TEST 5: "
+ls -R 
+removeTestDir
+
+echo "\n=================================================="
+echo "================ INCORRECT EXAMPLES =============="
+echo "=================================================="
+
+echo "\n===========> INCORRECT EXAMPLE (TEST 6):"
+createTestDir
+echo "Selecting both uppercase (-u) and lowercase (-l) option: "
+echo "../$PARENT_SCRIPT -u -l A_dir\n"
+../$PARENT_SCRIPT -u -l A_dir
+
+echo "\nSince command was used incorecrtly, no files were changed"
+removeTestDir
+
+echo "\n===========> INCORRECT EXAMPLE (TEST 7):"
+createTestDir
+echo "Providing too few arguments: "
+echo "../$PARENT_SCRIPT -r\n"
+../$PARENT_SCRIPT -r
+
+echo "\nSince command was used incorecrtly, no files were changed"
+removeTestDir
+
+echo "\n===========> INCORRECT EXAMPLE (TEST 8):"
+createTestDir
+echo "Providing option and sed pattern at the same time (Be careful! Since option -l was selected the script will take sed pattern as a file name!):"
+echo "../$PARENT_SCRIPT -r -l 's/A/a/g' A_dir\n"
+../$PARENT_SCRIPT -r -l 's/A/a/g' A_dir
+
+echo "\nAs the result we see error message for non existing file 's/A/a/g' and A_dir and its content was lowercased. "
+echo "\nContents of test_home after TEST 8: "
+ls -R 
+removeTestDir
+
+echo "\n===========> INCORRECT EXAMPLE (TEST 9):"
+createTestDir
+echo "Providion option after files path (Be careful! In this example option -r will be treated like directory):"
+echo "../$PARENT_SCRIPT -u A_dir -r\n"
+../$PARENT_SCRIPT -u A_dir -r
+
+echo "\nAs the result we see error message for non existing file '-r' and A_dir name was lowercased (but not its content). "
+echo "\nContents of test_home after TEST 9: "
+ls -R 
+removeTestDir
+
+echo "\n===========> CORRECT/INCORRECT EXAMPLE (TEST 10):"
+createTestDir
+echo "Trying to upercase all content of B_dir - although there are two files there with the same name where one is already in uppercase. It will not affect the result of the script, although error message will be shown:"
+echo "../$PARENT_SCRIPT -r -u B_dir\n"
+../$PARENT_SCRIPT -r -u B_dir
+
+echo "\nAs the result we see error message for file B_file.txt but all other files are renamed normally."
+echo "\nContents of test_home after TEST 10: "
+ls -R 
+removeTestDir
+
+echo "\n$SCRIPT_NAME finished. For more information of usage of script $PARENT_SCRIPT use \"$PARENT_SCRIPT -h\""
+echo  "Cleaning up all created folders..."
+cd ..
+# END OF SCRIPT
+# MADE BY JAN RADZIMINSKI
+# 293052

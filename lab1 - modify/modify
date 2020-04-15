@@ -1,0 +1,159 @@
+#!/bin/sh
+# MODIFY SCRIPT
+# BY JAN RADZIMINSKI
+# 293052
+
+# ABOUT SCRIPT
+SCRIPT_NAME=$(basename $0)
+# -----------
+
+# Exit codes
+# 1 - too many options selected - -l and -u at the same time
+# 2 - too few arguemtns
+# 3 - unkown option
+
+# ========================================= FUNCTIONS
+help() {
+	cat<<EOT
+$SCRIPT_NAME renames files and directories - it supports operations: uppercasing, lowercasing or renaming based on sed pattern.
+
+usage:
+	$SCRIPT_NAME [-r] [-l|-u] <dir|file names...>
+	$SCRIPT_NAME [-r] <sed pattern>  <dir|file names...>
+	$SCRIPT_NAME [-h]
+
+options:
+	-r - enables recursive mode - files will be renamed recursively
+	-u - upperasing dir and file names
+	-l - lowercasing dir and file names
+	<sed pattern> - pattern for sed command that will work as pattern for renaming
+
+correct syntax examples:
+	$SCRIPT_NAME -l file
+	$SCRIPT_NAME -r -l directory
+	$SCRIPT_NAME -r -u directory file directory
+	$SCRIPT_NAME -r 's/a/B/g' directory
+	$SCRIPT_NAME -h
+
+incorrect syntax examples:
+	$SCRIPT_NAME file
+	$SCRIPT_NAME -x file
+	$SCRIPT_NAME file -r 
+	$SCRIPT_NAME directory 's/a/B/g'
+EOT
+	exit 0;
+}
+
+tooManyOptionsSelected() {
+	echo "Too many options selected. Please select only one mode: -l, -u or sed pattern. For more information type -h."
+	exit 1
+}
+
+tooFewArguments() {
+	echo "Too few arguments. Please choose at least one option (-l, -u or sed pattern) and provide files/directories to rename. For more information use -h."
+	exit 2
+}
+
+# $1 - file/directory, $2 - sedPattern
+singleRename() {
+	NAME=$(basename $1)
+	DIRNAME=$(dirname $1)
+	RENAMED="$(echo $NAME | sed $2)"
+
+	if test "$RENAMED" != "$NAME"; then
+		if test -e "$DIRNAME/$RENAMED"; then
+			echo "Can't change the name of $NAME into $RENAMED since such instance already exists in direcotry $DIRNAME ."
+		else
+			mv "$1" "$DIRNAME/$RENAMED"
+		fi
+	fi
+}
+
+# $1 - directory, $2 - sedPattern
+recursiveRename() {
+	for ELEMENT in "$1"/*; do
+		if test "$(basename $ELEMENT)" = "*"; then
+			break
+		fi
+		if test -d "$ELEMENT" ; then
+			recursiveRename "$ELEMENT" "$2"
+		else	
+			singleRename $ELEMENT $SED_PATT
+		fi
+	done
+	singleRename $1 $SED_PATT
+}
+
+# ========================================================================
+# REC - 0 if not recursive 1 if recursive mode selected
+REC=0
+# Pattern for sed command 
+SED_PATT=""
+
+# Reading flags
+# Too few args
+if test $# -lt 1 ; then
+	tooFewArguments
+fi
+
+while getopts ":lurh" OPT; do
+	case $OPT in
+		l)
+			if test -n "$SED_PATT"; then
+				tooManyOptionsSelected
+			fi
+			SED_PATT="s/[[:upper:]]/\L&/g"
+			echo "Renameing files to lowercase.";;
+		u)	
+			if test -n "$SED_PATT"; then
+				tooManyOptionsSelected
+			fi
+			SED_PATT="s/[[:lower:]]/\U&/g"
+			echo "Renameing files to uppercase.";;
+		r)	
+			REC=1
+			echo "Recursive mode selected.";;
+		h)
+			help;;
+		*)
+			echo "Uknown option \"$1\". Please use -h for help."
+			exit 3;;
+	esac
+	shift
+done
+
+
+if test -z "$SED_PATT"; then
+	if test -z "$1"; then
+		tooFewArguments
+	fi
+
+	SED_PATT=$1
+	echo "Renameing files according to provided sed pattern \"$SED_PATT\"."
+	shift
+fi
+
+# RENAMING FILES
+while test -n "$1"; do
+	echo "Renaming \"$1\"..."
+	
+	if test ! -e $1 ; then
+		echo "Cannot rename \"$1\" since it does not exist."
+		shift
+		continue	
+	fi
+	if test $REC = 1 -a -d $1; then
+		recursiveRename "$1" $SED_PATT
+	else
+		 singleRename $1 $SED_PATT	
+	fi
+	echo "Renamed successfully"	
+
+	shift
+done
+
+exit 0
+
+# END OF SCRIPT
+# MADE BY JAN RADZIMINSKI
+# 293052
