@@ -1,0 +1,27 @@
+Summary Process:
+Process: 0 registered... (2000 500 0 0)
+Process: 0 I/O blocked... (2000 500 500 500)
+Process: 1 registered... (2000 500 0 0)
+Process: 1 I/O blocked... (2000 500 500 500)
+Process: 0 registered... (2000 500 500 500)
+Process: 0 I/O blocked... (2000 500 1000 1000)
+Process: 1 registered... (2000 500 500 500)
+Process: 1 I/O blocked... (2000 500 1000 1000)
+Process: 0 registered... (2000 500 1000 1000)
+Process: 0 I/O blocked... (2000 500 1500 1500)
+Process: 1 registered... (2000 500 1000 1000)
+Process: 1 I/O blocked... (2000 500 1500 1500)
+Process: 0 registered... (2000 500 1500 1500)
+Process: 0 completed... (2000 500 2000 2000)
+Process: 1 registered... (2000 500 1500 1500)
+Process: 1 completed... (2000 500 2000 2000)
+
+Summary Results:
+Scheduling Type: Batch (Nonpreemptive)
+Scheduling Name: First-Come First-Served
+Simulation Run Time: 4000
+Mean: 2000
+Standard Deviation: 0
+Process #	CPU Time	IO Blocking	CPU Completed	CPU Blocked
+0		2000 (ms)	500 (ms)	2000 (ms)	3 times
+1		2000 (ms)	500 (ms)	2000 (ms)	3 times
