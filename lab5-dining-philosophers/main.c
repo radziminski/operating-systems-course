@@ -10,13 +10,16 @@
 #include <signal.h>
 #include <time.h>
 
-#define SHM_KEY 0x1000
-#define PHILOS_STATES_SEM 0x2000
-#define FORKS_SEM 0x3000
+#define SHM_KEY 0x7000
+#define PHILOS_STATES_SEM 0x8000
+#define FORKS_SEM 0x9000
+
+#define MAX_PROGRAM_RUNTIME 90
 
 #define PHILOSOPHERS_NUM 5
 #define LEFT (PHILOSOPHERS_NUM + id - 1) % PHILOSOPHERS_NUM
 #define RIGHT (id + 1) % PHILOSOPHERS_NUM
+#define PHILOSOPHERS_MEALS_NUM 3
 
 enum philo_state
 {
@@ -24,16 +27,17 @@ enum philo_state
 	Thinking,
 	Hungry
 };
-// Philosophers arr
+
+// Philosophers states arr (shared to all processes)
 struct shared_mem_seg
 {
 	enum philo_state states[PHILOSOPHERS_NUM];
 } * shm_seg;
 
-// TIME
+// Time
 int random_time(int lowLimit, int highLimit);
 
-// PHILOSOPHERS
+// Philospohers functions
 void eat_msg(int philosopher);
 void think_msg(int philosopher);
 void meal_finished_msg(int philosopher);
@@ -41,15 +45,16 @@ void init_philosophers();
 void kill_all_philosophers(pid_t *philo_processes, int philo_num);
 void philosopher(int philo_num);
 
-// SEMS
+// Semaphores functions
 void grab_forks(int left_fork_id);
 void put_away_forks(int left_fork_id);
 void toggle_sem(int semid, int bufid, bool lock);
 void try_philo_eat(int id);
 
+// MAIN
 int main(int argc, char *argv[])
 {
-	// Creating shared memory whih philosophers arr
+	// Creating shared memory whih philosophers states arr
 	int shm = shmget(SHM_KEY, sizeof(struct shared_mem_seg), 0644 | IPC_CREAT);
 	if (shm == -1)
 	{
@@ -57,7 +62,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	// Attach to the segment to get a pointer to it.
+	// Attach to the segment and get a pointer to it (stored in global var)
 	shm_seg = shmat(shm, NULL, 0);
 	if (shm_seg == (void *)-1)
 	{
@@ -65,41 +70,37 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	init_philosophers();
-
-	///////////////////////////////////////////////////// do ogarniecia wziete od wiktos
-
-	//mutex for state changes
-	int state_mutex = semget(FORKS_SEM, 1, 0666 | IPC_CREAT);
-	if (state_mutex < 0)
+	// gettign semaphore for forks
+	int forks_sem = semget(FORKS_SEM, 1, 0666 | IPC_CREAT);
+	if (forks_sem < 0)
 	{
-		perror("semget: state mutex not created");
+		perror("There was an error while creating forks semaphore\n");
 		return 1;
 	}
 
-	union semaphore_un {
+	union semaphores_union {
 		int val;
-		unsigned int *array;
+		unsigned short *array;
 	} sem_un;
-
-	//init mutex counter
 	sem_un.val = 1;
-	if (semctl(state_mutex, 0, SETVAL, sem_un) < 0)
+
+	// Setting forks semaphore
+	if (semctl(forks_sem, 0, SETVAL, sem_un) < 0)
 	{
-		perror("semctl: state mutex value failed to set");
+		perror("There was an error while setting forks semaphore\n");
 		return 1;
 	}
 
-	//mutexes for philosopher grab\put away forks
+	// Creating semaphore for grabbing and putting away forks
 	int philo_sems = semget(PHILOS_STATES_SEM, PHILOSOPHERS_NUM, 0666 | IPC_CREAT);
 	if (philo_sems < 0)
 	{
-		perror("semget: philosophers semaphores not created");
+		perror("There was an error while creating philos semaphores\n");
 		return 1;
 	}
 
-	//init semaphores
-	unsigned int zeros[PHILOSOPHERS_NUM];
+	// Setting those semaphores
+	unsigned short zeros[PHILOSOPHERS_NUM];
 	for (int i = 0; i < PHILOSOPHERS_NUM; i++)
 	{
 		zeros[i] = 0;
@@ -107,11 +108,12 @@ int main(int argc, char *argv[])
 	sem_un.array = zeros;
 	if (semctl(philo_sems, 0, SETALL, sem_un) < 0)
 	{
-		perror("semctl: philo semaphores values failed to set");
+		perror("There was an error while setting philos semaphores");
 		return 1;
 	}
 
-	///////////////////////////////////////////////////// koniec do ogarniecia
+	// Setting all philosophers to thinking state
+	init_philosophers();
 
 	// Philosphers dinner loop
 	pid_t philosophers_process_ids[PHILOSOPHERS_NUM];
@@ -141,8 +143,9 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	sleep(210);
-	kill_all_philosophers(philosophers_process_ids, 5);
+	// Max 60s of program run
+	sleep(MAX_PROGRAM_RUNTIME);
+	kill_all_philosophers(philosophers_process_ids, PHILOSOPHERS_NUM);
 
 	return 0;
 }
@@ -270,7 +273,7 @@ void toggle_sem(int semid, int bufid, bool lock)
 
 void philosopher(int philo_num)
 {
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < PHILOSOPHERS_MEALS_NUM; i++)
 	{
 		think_msg(philo_num);
 		grab_forks(philo_num);
