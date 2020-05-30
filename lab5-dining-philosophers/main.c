@@ -10,6 +10,8 @@
 #include <signal.h>
 #include <time.h>
 
+// Made by Jan Radziminski 293052
+
 #define SHM_KEY 0x7000
 #define PHILOS_STATES_SEM 0x8000
 #define FORKS_SEM 0x9000
@@ -70,7 +72,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	// gettign semaphore for forks
+	// Fettign semaphore for forks
 	int forks_sem = semget(FORKS_SEM, 1, 0666 | IPC_CREAT);
 	if (forks_sem < 0)
 	{
@@ -91,11 +93,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	// Creating semaphore for grabbing and putting away forks
-	int philo_sems = semget(PHILOS_STATES_SEM, PHILOSOPHERS_NUM, 0666 | IPC_CREAT);
-	if (philo_sems < 0)
+	// Creating semaphores for hungry phliosophers
+	int philosophers_sems = semget(PHILOS_STATES_SEM, PHILOSOPHERS_NUM, 0666 | IPC_CREAT);
+	if (philosophers_sems < 0)
 	{
-		perror("There was an error while creating philos semaphores\n");
+		perror("There was an error while creating philosophers semaphores\n");
 		return 1;
 	}
 
@@ -106,7 +108,7 @@ int main(int argc, char *argv[])
 		zeros[i] = 0;
 	}
 	sem_un.array = zeros;
-	if (semctl(philo_sems, 0, SETALL, sem_un) < 0)
+	if (semctl(philosophers_sems, 0, SETALL, sem_un) < 0)
 	{
 		perror("There was an error while setting philos semaphores");
 		return 1;
@@ -143,7 +145,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	// Max 60s of program run
+	// Max 90s of program run
 	sleep(MAX_PROGRAM_RUNTIME);
 	kill_all_philosophers(philosophers_process_ids, PHILOSOPHERS_NUM);
 
@@ -152,10 +154,10 @@ int main(int argc, char *argv[])
 
 // FUNCTIONS
 
-int random_time(int lowLimit, int highLimit)
+int random_time(int low_limit, int high_limit)
 {
 	srand(time(0));
-	return rand() % (highLimit - lowLimit + 1) + lowLimit;
+	return rand() % (high_limit - low_limit + 1) + low_limit;
 }
 
 void eat_msg(int philosopher)
@@ -238,8 +240,6 @@ void try_philo_eat(int id)
 		perror("There was an errir while getting philos semaphore [semget]");
 		exit(1);
 	}
-
-	//printf("Trying: philo: %d, philostate: %d, leftstate: %d, rightstate: %d\n", id, shm_seg->states[id], shm_seg->states[LEFT], shm_seg->states[RIGHT]);
 
 	if (shm_seg->states[id] == Hungry && !(shm_seg->states[LEFT] == Eating) && !(shm_seg->states[RIGHT] == Eating))
 	{
