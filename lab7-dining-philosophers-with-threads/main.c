@@ -4,6 +4,21 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+// EOPSY Lab 7 Laboratories project
+// Dining Philosophers - made with threads
+
+/* Lab Questions:
+	1. Would it be sufficient just to add to the old algorithm from task5 additional mutex variable to organize critical sections in functions
+	grab_forks() and put_away_forks() for making changes to values of two mutexes indivisably?  If not, why?
+
+	2. Why m mutex is initialized with 1 and mutexes from the array s are initialized with 0's?
+	Mutex m is used to control the critical sections where the given philosopher tries to grab or put down fork. Therefore, at start it needs to be
+	unlocked (initialized with 1) so that the first philosopher may try to grab forks. If it was locked at the start, no philosopher would be able to 
+	enter the critical state thus grab a fork.
+	Mutex s array is used to control which philosopher is hungry (wants to eat), to stop its execution when he cannot eat at the moment and contiune
+	its execution when he finally may eat. At start it should be locked so that te process executes normally, and when philosopher start to be hungry it should 	be unlocked, so that if philosopher cannot eat at the moment he will wait until he can eat - after he eats the mutex is locked again and he starts thinking, 	etc. 
+*/
+
 #define MAX_PROGRAM_RUNTIME 90
 
 #define PHILOSOPHERS_NUM 5
