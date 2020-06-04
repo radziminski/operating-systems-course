@@ -2,6 +2,8 @@
 # Shell script for simple testing of copy program
 # Made by Jan Radziminski
 
+# Note: I didn't included tests for big file since they had size around 1 GB, but program worked for them almost immidietly
+
 name="Copy"
 command="./copy"
 
@@ -31,3 +33,5 @@ echo "Copying file that doesnt exist:\n./copy input/abc output/abc_copy"
 
 echo "\nCopying file to directory that doesnt exist:\n./copy input/file_mid test/abc_copy"
 ./copy -m input/file_mid test/abc_copy
+
+echo "\nTests finished successfully"
