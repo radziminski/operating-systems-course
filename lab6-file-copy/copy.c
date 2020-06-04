@@ -7,6 +7,9 @@
 #include <stdbool.h>
 #include <string.h>
 
+// Program for 6th EOPSY Laboratories
+// Made by Jan Radziminski
+
 #define COPY_WRITE_BUFF_SIZE 2048
 
 void help();
